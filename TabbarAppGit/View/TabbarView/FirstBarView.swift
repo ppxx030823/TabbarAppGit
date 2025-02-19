@@ -9,7 +9,7 @@
 import UIKit
 import SnapKit
 
-class FirstTabViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class FirstTabViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, ArticleTableViewCellDelegate {
     private let tableView: UITableView = {
         let tableView = UITableView()
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -37,12 +37,9 @@ class FirstTabViewController: UIViewController, UITableViewDataSource, UITableVi
         tableView.delegate = self
         tableView.register(ArticleTableViewCell.self, forCellReuseIdentifier: "ArticleCell")
 
-        NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
+        tableView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -50,14 +47,24 @@ class FirstTabViewController: UIViewController, UITableViewDataSource, UITableVi
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ArticleCell", for: indexPath) as! ArticleTableViewCell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "ArticleCell", for: indexPath) as? ArticleTableViewCell else{
+            fatalError("无法将单元格转换为 ArticleTableViewCell 类型")
+        }
         let article = viewModel.article(at: indexPath.row)
         let cellViewModel = ArticleCellViewModel(article: article)
         cell.configure(with: cellViewModel)
+        // 设置单元格的委托为当前视图控制器
+        cell.delegate = self
         return cell
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 165
+    }
+
+    func didTapArticleTitleButton(in cell: ArticleTableViewCell) {
+        let alertVC = CustomAlertViewController()
+        alertVC.modalPresentationStyle = .overFullScreen
+        present(alertVC, animated: true, completion: nil)
     }
 }

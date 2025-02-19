@@ -6,19 +6,50 @@
 //
 
 import UIKit
+import SnapKit
 
 class LoginViewController: UIViewController {
     private let viewModel = LoginViewModel()
+    // 模拟登录成功的回调闭包
+    var onLoginSuccess: (() -> Void)?
 
-    private let buttonCornerRadius: CGFloat = 5
+    static let buttonCornerRadius: CGFloat = 5
     private let animationDuration: TimeInterval = 0.5
     private let loginButtonAnimationDuration: TimeInterval = 1.0
     private let loginButtonSpringDamping: CGFloat = 0.2
     private let loginButtonInitialSpringVelocity: CGFloat = 10
 
-    private let usernameTextField = UITextField()
-    private let passwordTextField = UITextField()
-    private let loginButton = UIButton(type: .system)
+    private let usernameTextField: UITextField = {
+        let usernameTextField = UITextField()
+        usernameTextField.placeholder = "Username"
+        usernameTextField.layer.cornerRadius = LoginViewController.buttonCornerRadius
+        usernameTextField.borderStyle = .roundedRect
+        return usernameTextField
+    }()
+
+    private let passwordTextField: UITextField = {
+        let passwordTextField = UITextField()
+        passwordTextField.placeholder = "Password"
+        passwordTextField.layer.cornerRadius = LoginViewController.buttonCornerRadius
+        passwordTextField.borderStyle = .roundedRect
+        passwordTextField.isSecureTextEntry = true
+        return passwordTextField
+    }()
+
+    private let loginButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("Login", for: .normal)
+        button.backgroundColor = .blue
+        button.layer.cornerRadius = buttonCornerRadius
+        return button
+    }()
+
+    private let showAlertButton: UIButton = {
+        let showAlertButton = UIButton(type: .system)
+        showAlertButton.setTitle("显示弹窗", for: .normal)
+        showAlertButton.frame = CGRect(x: 100, y: 200, width: 200, height: 50)
+        return showAlertButton
+    }()
 
     private var usernameConstraint: NSLayoutConstraint!
     private var passwordConstraint: NSLayoutConstraint!
@@ -28,6 +59,7 @@ class LoginViewController: UIViewController {
         setupUI()
         setupConstraints()
         setupDelegates()
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -46,22 +78,16 @@ class LoginViewController: UIViewController {
 
     private func setupUI() {
         view.backgroundColor = .systemBackground
-
-        usernameTextField.placeholder = "Username"
-        usernameTextField.layer.cornerRadius = buttonCornerRadius
-        usernameTextField.borderStyle = .roundedRect
         view.addSubview(usernameTextField)
-
-        passwordTextField.placeholder = "Password"
-        passwordTextField.layer.cornerRadius = buttonCornerRadius
-        passwordTextField.borderStyle = .roundedRect
-        passwordTextField.isSecureTextEntry = true
         view.addSubview(passwordTextField)
-
-        loginButton.setTitle("Login", for: .normal)
-        loginButton.layer.cornerRadius = buttonCornerRadius
-        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
         view.addSubview(loginButton)
+        view.addSubview(showAlertButton)
+        addAction()
+    }
+
+    private func addAction() {
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
+        showAlertButton.addTarget(self, action: #selector(showAlert), for: .touchUpInside)
     }
 
     private func setupConstraints() {
@@ -72,22 +98,26 @@ class LoginViewController: UIViewController {
         usernameConstraint = usernameTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         passwordConstraint = passwordTextField.centerXAnchor.constraint(equalTo: view.centerXAnchor)
 
-        NSLayoutConstraint.activate([
-            usernameConstraint,
-            usernameTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 100),
-            usernameTextField.widthAnchor.constraint(equalToConstant: 250),
-            usernameTextField.heightAnchor.constraint(equalToConstant: 50),
+        usernameTextField.snp.makeConstraints { make in
+            make.centerX.equalTo(view.snp.centerX)
+            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).inset(100)
+            make.width.equalTo(250)
+            make.height.equalTo(50)
+        }
 
-            passwordConstraint,
-            passwordTextField.topAnchor.constraint(equalTo: usernameTextField.bottomAnchor, constant: 20),
-            passwordTextField.widthAnchor.constraint(equalToConstant: 250),
-            passwordTextField.heightAnchor.constraint(equalToConstant: 50),
+        passwordTextField.snp.makeConstraints { make in
+            make.centerX.equalTo(view.snp.centerX)
+            make.top.equalTo(usernameTextField.snp.bottom).offset(20)
+            make.width.equalTo(250)
+            make.height.equalTo(50)
+        }
 
-            loginButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loginButton.topAnchor.constraint(equalTo: passwordTextField.bottomAnchor, constant: 50),
-            loginButton.widthAnchor.constraint(equalToConstant: 250),
-            loginButton.heightAnchor.constraint(equalToConstant: 50)
-        ])
+        loginButton.snp.makeConstraints { make in
+            make.centerX.equalTo(view.snp.centerX)
+            make.top.equalTo(passwordTextField.snp.bottom).offset(50)
+            make.width.equalTo(250)
+            make.height.equalTo(50)
+        }
     }
 
     private func setupDelegates() {
@@ -101,7 +131,8 @@ class LoginViewController: UIViewController {
         loginButton.alpha = 0
     }
 
-    private func animateUI() {
+    // MARK: 登陆动画
+    private func animateInputFields() {
         UIView.animate(withDuration: animationDuration, delay: 0.0, options: .curveEaseOut, animations: {
             self.usernameConstraint.constant += self.view.bounds.width
             self.view.layoutIfNeeded()
@@ -111,10 +142,17 @@ class LoginViewController: UIViewController {
             self.passwordConstraint.constant += self.view.bounds.width
             self.view.layoutIfNeeded()
         }, completion: nil)
+    }
 
+    private func animateLoginButton() {
         UIView.animate(withDuration: animationDuration, delay: 0.2, options: .curveEaseOut, animations: {
             self.loginButton.alpha = 1
         }, completion: nil)
+    }
+
+    private func animateUI() {
+        animateInputFields()
+        animateLoginButton()
     }
 
     @objc private func loginButtonTapped() {
@@ -125,11 +163,16 @@ class LoginViewController: UIViewController {
         viewModel.validateLogin(with: model) { [weak self] isValid in
             if isValid {
                 print("Login successful")
+                let tabBarController = TabBarViewController.createTabBarController()
+                self?.navigationController?.pushViewController(tabBarController, animated: true)
             } else {
                 print("Login failed")
+                // 显示登录成功弹窗
+
             }
         }
 
+        // MARK: 页面跳转动画
         let bounds = self.loginButton.bounds
         UIView.animate(withDuration: loginButtonAnimationDuration, delay: 0.0, usingSpringWithDamping: loginButtonSpringDamping, initialSpringVelocity: loginButtonInitialSpringVelocity, options: .curveLinear, animations: {
             self.loginButton.bounds = CGRect(x: bounds.origin.x - 20, y: bounds.origin.y, width: bounds.size.width + 60, height: bounds.size.height)
@@ -137,6 +180,15 @@ class LoginViewController: UIViewController {
         }) { [weak self] finished in
             self?.loginButton.isEnabled = true
         }
+        // 模拟登录成功
+        onLoginSuccess?()
+
+    }
+
+    @objc private func showAlert() {
+        let alertVC = CustomAlertViewController()
+        alertVC.modalPresentationStyle = .overFullScreen
+        present(alertVC, animated: true, completion: nil)
     }
 }
 

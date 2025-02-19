@@ -9,6 +9,9 @@ import UIKit
 import SnapKit
 
 class ArticleTableViewCell: UITableViewCell {
+    weak var delegate: ArticleTableViewCellDelegate?
+
+
     private let avatarImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
@@ -39,12 +42,16 @@ class ArticleTableViewCell: UITableViewCell {
         return imageView
     }()
 
-    private let articleTitleLabel: UILabel = {
-        let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        label.numberOfLines = 0
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+    private let articleTitleButton: UIButton = {
+        let button = UIButton(type: .system)
+        // 设置字体，和原来 UILabel 的字体保持一致
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        // 设置多行显示，虽然按钮一般不用设置这个，但这里为了保持逻辑类似
+        button.titleLabel?.numberOfLines = 0
+
+        // 禁用自动布局转换
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
     }()
 
     private let articleSourceLabel: UILabel = {
@@ -63,6 +70,7 @@ class ArticleTableViewCell: UITableViewCell {
         return label
     }()
 
+
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
@@ -77,9 +85,10 @@ class ArticleTableViewCell: UITableViewCell {
         contentView.addSubview(sharedNameLabel)
         contentView.addSubview(actionTypeLabel)
         contentView.addSubview(articleCoverImageView)
-        contentView.addSubview(articleTitleLabel)
+        contentView.addSubview(articleTitleButton)
         contentView.addSubview(articleSourceLabel)
         contentView.addSubview(articleCreatedAtLabel)
+
 
         avatarImageView.snp.makeConstraints { make in
             make.leading.equalTo(contentView.snp.leading).offset(16)
@@ -104,48 +113,25 @@ class ArticleTableViewCell: UITableViewCell {
             make.height.equalTo(80)
         }
 
-        articleTitleLabel.snp.makeConstraints { make in
+        articleTitleButton.snp.makeConstraints { make in
             make.leading.equalTo(sharedNameLabel.snp.leading)
             make.top.equalTo(sharedNameLabel.snp.bottom).offset(4)
             make.trailing.equalTo(articleCoverImageView.snp.leading).offset(-8)
+            make.width.equalTo(200)
+            make.height.equalTo(50)
         }
 
         articleSourceLabel.snp.makeConstraints { make in
-            make.leading.equalTo(articleTitleLabel.snp.leading)
-            make.top.equalTo(articleTitleLabel.snp.bottom).offset(4)
+            make.leading.equalTo(articleTitleButton.snp.leading)
+            make.top.equalTo(articleTitleButton.snp.bottom).offset(4)
         }
 
         articleCreatedAtLabel.snp.makeConstraints { make in
             make.leading.equalTo(articleSourceLabel.snp.trailing).offset(8)
             make.centerY.equalTo(articleSourceLabel.snp.centerY)
         }
-//        NSLayoutConstraint.activate([
-//            avatarImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-//            avatarImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-//            avatarImageView.widthAnchor.constraint(equalToConstant: 40),
-//            avatarImageView.heightAnchor.constraint(equalToConstant: 40),
-//
-//            sharedNameLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 8),
-//            sharedNameLabel.topAnchor.constraint(equalTo: avatarImageView.topAnchor),
-//
-//            actionTypeLabel.leadingAnchor.constraint(equalTo: sharedNameLabel.trailingAnchor, constant: 8),
-//            actionTypeLabel.centerYAnchor.constraint(equalTo: sharedNameLabel.centerYAnchor),
-//
-//            articleCoverImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-//            articleCoverImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-//            articleCoverImageView.widthAnchor.constraint(equalToConstant: 80),
-//            articleCoverImageView.heightAnchor.constraint(equalToConstant: 80),
-//
-//            articleTitleLabel.leadingAnchor.constraint(equalTo: sharedNameLabel.leadingAnchor),
-//            articleTitleLabel.topAnchor.constraint(equalTo: sharedNameLabel.bottomAnchor, constant: 4),
-//            articleTitleLabel.trailingAnchor.constraint(equalTo: articleCoverImageView.leadingAnchor, constant: -8),
-//
-//            articleSourceLabel.leadingAnchor.constraint(equalTo: articleTitleLabel.leadingAnchor),
-//            articleSourceLabel.topAnchor.constraint(equalTo: articleTitleLabel.bottomAnchor, constant: 4),
-//
-//            articleCreatedAtLabel.leadingAnchor.constraint(equalTo: articleSourceLabel.trailingAnchor, constant: 8),
-//            articleCreatedAtLabel.centerYAnchor.constraint(equalTo: articleSourceLabel.centerYAnchor)
-//        ])
+
+        articleTitleButton.addTarget(self, action: #selector(showAlert), for: .touchUpInside)
     }
 
     func configure(with viewModel: ArticleCellViewModel) {
@@ -153,8 +139,17 @@ class ArticleTableViewCell: UITableViewCell {
         sharedNameLabel.text = viewModel.sharedName
         actionTypeLabel.text = viewModel.actionType
         articleCoverImageView.image = viewModel.articleCoverImage
-        articleTitleLabel.text = viewModel.articleTitle
+        articleTitleButton.setTitle(viewModel.articleTitle, for: .normal)
         articleSourceLabel.text = viewModel.articleSource
         articleCreatedAtLabel.text = viewModel.articleTime
     }
+
+    @objc private func showAlert() {
+        delegate?.didTapArticleTitleButton(in: self)
+    }
+}
+
+
+protocol ArticleTableViewCellDelegate: AnyObject {
+    func didTapArticleTitleButton(in cell: ArticleTableViewCell)
 }
