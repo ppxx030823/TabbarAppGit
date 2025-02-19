@@ -28,7 +28,26 @@ class FirstTabViewController: UIViewController, UITableViewDataSource, UITableVi
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupTitle()
+        setupBarButtonItem()
         setupTableView()
+    }
+
+    private func setupTitle() {
+        // 设置视图控制器的标题
+        title = "文章列表"
+    }
+
+    private func setupBarButtonItem() {
+        // 创建一个 UIBarButtonItem
+        let barButtonItem = UIBarButtonItem(title: "更多", style:.plain, target: self, action: #selector(moreButtonTapped))
+        // 将 UIBarButtonItem 设置到导航栏的右侧
+        navigationItem.rightBarButtonItem = barButtonItem
+    }
+
+    @objc private func moreButtonTapped() {
+        // 处理按钮点击事件
+        print("更多按钮被点击")
     }
 
     private func setupTableView() {
@@ -47,13 +66,12 @@ class FirstTabViewController: UIViewController, UITableViewDataSource, UITableVi
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: "ArticleCell", for: indexPath) as? ArticleTableViewCell else{
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "ArticleCell", for: indexPath) as? ArticleTableViewCell else {
             fatalError("无法将单元格转换为 ArticleTableViewCell 类型")
         }
         let article = viewModel.article(at: indexPath.row)
         let cellViewModel = ArticleCellViewModel(article: article)
         cell.configure(with: cellViewModel)
-        // 设置单元格的委托为当前视图控制器
         cell.delegate = self
         return cell
     }
